@@ -1,0 +1,193 @@
+---
+title: "glm_hw5"
+author: "Jess Kaminsky"
+date: "4/11/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(arm)
+library(metRology)
+```
+
+## Chapter 7
+
+### Problem 2
+DONE - NEEDS WRITE UP AND FORMATTING
+Continuous probability simulation: the logarithms of weights (in pounds) of men in the United States are approximately normally distributed with mean 5.13 and standard deviation 0.17; women with mean 4.96 and standard deviation 0.20. Suppose 10 adults selected at random step on an elevator with a capacity of 1750 pounds. What is the probability that the elevator cable breaks?
+#should we be using the 52% female/48% male ratio provided on page 139
+```{r}
+#sex is 1 if male and 0 if female
+
+nsims <- 1000
+elevator <- c()
+for (i in 1:nsims) {
+sex <- rbinom(10, 1, 0.52)
+log_weight <- ifelse(sex == 0, rnorm(10, 5.13, 0.17), rnorm(10, 4.96, 0.20))
+weight = exp(log_weight)
+elevator[i] = sum(weight)
+}
+
+sum(elevator > 1750) / length(elevator)
+```
+### Problem 8
+Inference for the ratio of parameters: a (hypothetical) study compares the costs and effectiveness of two different medical treatments.
+•In the first part of the study, the difference in costs between treatments A and B is estimated at $600 per patient, with a standard error of $400, based on a regression with 50 degrees of freedom.
+•In the second part of the study, the difference in effectiveness is estimated at 3.0 (on some relevant measure), with a standard error of 1.0, based on a regression with 100 degrees of freedom.
+•For simplicity, assume that the data from the two parts of the study were collected independently
+
+Inference is desired for the incremental cost-effectiveness ratio: the difference between the average costs of the two treatments, divied by the difference between their average effectiveness.
+
+(a) Create 1000 simulation draws of the cost difference and effectiveness difference, and make a scatterplot of these draws
+```{r}
+
+
+
+```
+
+(b)
+(c)
+
+```{r}
+
+```
+## Chapter 8 
+
+### Problem 1
+Fitting the wrong model: suppose you have 100 data points that arose from the following model:y=3+0.1x1+0.5x2+ error, with errors having a t distribution with mean 0, scale 5, and 4 degrees of freedom. We shall explore the implications of fitting a standard linear regression to these data.
+
+(a) DONE - NEEDS WRITE UP AND FORMATTING
+Simulate data from this model. For simplicity, suppose the values of x1 are simply the integers from 1 to 100, and that the values ofx2are random andequally likely to be 0 or 1. Fit a linear regression (with normal errors) to these data and see if the 68% confidence intervals for the regression coefficients (foreach, the estimates±1 standard error) cover the true values.
+
+```{r}
+x.1 <- 1:100
+x.2 <- rbinom(n = 100, 1, 0.5)
+y <- 3 + .1*x.1 + .5*x.2 + rt.scaled(100, 0, 1)
+model_81a <- lm(y~x.1 + x.2)
+estimates <- summary(model_81a)$coefficients[,1]
+stderr <- summary(model_81a)$coefficients[,2]
+regression_CI <- cbind(estimates - stderr, estimates + stderr)
+
+b.x0 <- 3
+b.x1 <- 0.1
+b.x2 <- 0.5
+
+bse.x0 <- se.coef(model_81a)[1]
+bse.x1 <- se.coef(model_81a)[2]
+bse.x2 <- se.coef(model_81a)[3]
+
+bhat.x0 <- coef(model_81a)[1]
+bhat.x1<- coef(model_81a)[2]
+bhat.x2 <- coef(model_81a)[3]
+
+cover.x0 <- abs(b.x0 - bhat.x0) < bse.x0
+cover.x1 <- abs(b.x1 - bhat.x1) < bse.x1
+cover.x2 <- abs(b.x2 - bhat.x2) < bse.x2
+```
+
+(b)  DONE - NEEDS WRITE UP AND FORMATTING
+Put the above step in a loop and repeat 1000 times. Calculate the confidence coverage for the 68% intervals for each of the three coefficients in the model.
+
+```{r}
+# for(i in 1:1000) {
+#   x.1 <- 1:100
+#   x.2 <- rbinom(n = 100, 1, 0.5)
+#   y <- 3 + .1*x.1 + .5*x2
+#   model_81b <- lm(y~x.1 + x.2)
+#   estimates <- summary(model_81b)$coefficients[,1]
+#   stderr <- summary(model_81b)$coefficients[,2]
+#   regression_lower 
+# }
+
+cover <- matrix(nrow = 1000, ncol = 3)
+
+for(s in 1:1000) {
+  x.1b <- 1:100 
+  x.2b <- rbinom(n = 100, 1, 0.5)
+  yb <- 3 + .1*x.1b + .5*x.2b + rnorm(100, 0, 1)
+  model_81b <- lm(yb ~ x.1b + x.2b)
+  b <- c(b.x0, b.x1, b.x2)
+  hat <- coef(model_81b)
+  se <- se.coef(model_81b)
+  cover[s,] <- abs(b-hat) < se
+}
+
+apply(cover, 2, mean)
+```
+
+(c)  Repeat this simulation, but instead fit the model using t errors (see Exercise 6.6).
+
+errors having a t distribution with mean 0, scale 5, and 4 degrees of freedom
+#is this the correct way to sample from scaled t-distribution
+```{r}
+coverT <- matrix(nrow = 1000, ncol = 3)
+
+for(s in 1:1000) {
+  #this line has already been run above
+  x.1b <- 1:100 
+  x.2b <- rbinom(n = 100, 1, 0.5)
+  #rt.scaled(100, df = 4, mean = 0, sd = 5)
+  yb <- 3 + .1*x.1b + .5*x.2b + rt.scaled(100, df = 4, mean = 0, sd = 5)
+  model_81b <- lm(yb ~ x.1b + x.2b)
+  b <- c(b.x0, b.x1, b.x2)
+  hat <- coef(model_81b)
+  se <- se.coef(model_81b)
+  cover[s,] <- abs(b-hat) < se
+}
+
+apply(cover, 2, mean)
+
+```
+
+### Problem 4
+Model checking for count data: the folderrisky.behaviorcontains data froma study of behavior of couples at risk for HIV; see Exercise 6.1.
+(a)  Fit a Poisson regression model predicting number of unprotected sex acts frombaseline HIV status. Perform predictive simulation to generate 1000 datasets and record both the percent of observations that are equal to 0 and the percentthat are greater than 10 (the third quartile in the observed data) for each.Compare these values to the observed value in the original data.
+```{r}
+risky <- read.csv("risky_behaviors.csv")[-1]
+model_4a <- glm(bupacts ~ bs_hiv, family = poisson, data = risky)
+
+#length(risky$bupacts) = 434
+X <- cbind(rep(1, length(risky$bupacts)), risky$bs_hiv)
+#y.hat only has 2 different values?
+y.hat <- exp(X %*% coef(model_4a))
+
+
+
+
+```
+(b)  Repeat (a) using an overdispersed Poisson regression model.
+(c)  Repeat (b), also including ethnicity and baseline number of unprotected sexacts as input variables.
+```{r}
+
+```
+## Chapter 11
+
+### Problem 4
+The foldercd4has CD4 percentages for a set of young children with HIV whowere measured several times over a period of two years. The dataset also includesthe ages of the children at each measurement.
+(a) Graph the outcome (the CD4 percentage, on the square root scale) for eachchild as a function of time.
+(b)  Each child’s data has a time course that can be summarized by a linear fit.Estimate these lines and plot them for all the children.
+(c)  Set  up  a  model  for  the  children’s  slopes  and  intercepts  as  a  function  ofthe treatment and age at baseline. Estimate this model using the two-stepprocedure–first estimate the intercept and slope separately for each child, thenfit the between-child models using the point estimates from the first step.
+```{r}
+
+```
+## Chapter 12
+
+### Problem 2
+Continuing with the analysis of the CD4 data from Exercise 11.4:
+(a) Write a model predicting CD4 percentage as a function of time with varyingintercepts across children. Fit usinglmer()and interpret the coefficient fortime.
+(b)  Extend the model in (a) to include child-level predictors (that is, group-levelpredictors) for treatment and age at baseline. Fit usinglmer()and interpretthe coefficients on time, treatment, and age at baseline.
+(c) Investigate the change in partial pooling from (a) to (b) both graphically andnumerically.
+(d)  Compare results in (b) to those obtained in part (c).
+```{r}
+
+```
+### Problem 3
+Predictions for new observations and new groups:
+(a) Use the model fit from Exercise 12.2(b) to generate simulation of predictedCD4 percentages for each child in the dataset at a hypothetical next timepoint.
+(b)  Use the same model fit to generate simulations of CD4 percentages at each ofthe time periods for a new child who was 4 years old at baseline.
+### Problem 4
+Posterior predictive checking: continuing the previous exercise, use the fittedmodel from Exercise 12.2(b) to simulate a new dataset of CD4 percentages (withthe same sample size and ages of the original dataset) for the final time point ofthe study, and record the average CD4 percentage in this sample. Repeat thisprocess 1000 times and compare the simulated distribution to the observed CD4percentage at the final time point for the actual data.
+```{r}
+
+```
