@@ -14,26 +14,27 @@ library(ggplot2)
 library(lme4)
 ```
 
-## Chapter 7
+## Chapter 7 - Problem 2
 
-### Problem 2
-DONE - NEEDS WRITE UP AND FORMATTING
-Continuous probability simulation: the logarithms of weights (in pounds) of men in the United States are approximately normally distributed with mean 5.13 and standard deviation 0.17; women with mean 4.96 and standard deviation 0.20. Suppose 10 adults selected at random step on an elevator with a capacity of 1750 pounds. What is the probability that the elevator cable breaks?
 ```{r}
-#sex is 1 if male and 0 if female
+#sex is 1 if female
 
 nsims <- 1000
 elevator <- c()
+
 for (i in 1:nsims) {
-sex <- rbinom(10, 1, 0.52)
-log_weight <- ifelse(sex == 0, rnorm(10, 5.13, 0.17), rnorm(10, 4.96, 0.20))
-weight = exp(log_weight)
-elevator[i] = sum(weight)
+  sex <- rbinom(10, 1 , 0.52)
+  log_weight <- ifelse(sex == 0, rnorm(10, 5.13, 0.17), rnorm(10, 4.96, 0.20))
+  weight = exp(log_weight)
+  elevator[i] = sum(weight)
 }
 
-sum(elevator > 1750) / length(elevator)
+prob <- sum(elevator > 1750) / length(elevator)
 ```
-### Problem 8
+
+P(elevator breaks) is approximately 0.05
+
+## Chapter 7 - Problem 8
 Inference for the ratio of parameters: a (hypothetical) study compares the costs and effectiveness of two different medical treatments.
 •In the first part of the study, the difference in costs between treatments A and B is estimated at $600 per patient, with a standard error of $400, based on a regression with 50 degrees of freedom.
 •In the second part of the study, the difference in effectiveness is estimated at 3.0 (on some relevant measure), with a standard error of 1.0, based on a regression with 100 degrees of freedom.
@@ -60,22 +61,24 @@ plot(cost_diff, eff_diff)
 ```{r}
 
 ```
-## Chapter 8 
 
-### Problem 1
+## Chapter 8 - Problem 1
 Fitting the wrong model: suppose you have 100 data points that arose from the following model:y=3+0.1x1+0.5x2+ error, with errors having a t distribution with mean 0, scale 5, and 4 degrees of freedom. We shall explore the implications of fitting a standard linear regression to these data.
 
-(a) DONE - NEEDS WRITE UP AND FORMATTING
-Simulate data from this model. For simplicity, suppose the values of x1 are simply the integers from 1 to 100, and that the values ofx2are random andequally likely to be 0 or 1. Fit a linear regression (with normal errors) to these data and see if the 68% confidence intervals for the regression coefficients (foreach, the estimates±1 standard error) cover the true values.
-
+### Part A
 ```{r}
+#generate fake data
 x.1 <- 1:100
 x.2 <- rbinom(n = 100, 1, 0.5)
-y <- 3 + .1*x.1 + .5*x.2 + rt.scaled(n = 100, df = 4, mean = 0, sd = 5)
+y <- 3 + .1*x.1 + .5*x.2 + rnorm(100, 0, 1)
+
+#run the linear model on the simulated data
 model_81a <- lm(y~x.1 + x.2)
+
 estimates <- summary(model_81a)$coefficients[,1]
 stderr <- summary(model_81a)$coefficients[,2]
-regression_CI <- cbind(estimates - stderr, estimates + stderr)
+regression_CI <- cbind(Lower_68_CI = estimates - stderr, Upper_68_CI = estimates + stderr)
+
 
 b.x0 <- 3
 b.x1 <- 0.1
@@ -92,22 +95,38 @@ bhat.x2 <- coef(model_81a)[3]
 cover.x0 <- abs(b.x0 - bhat.x0) < bse.x0
 cover.x1 <- abs(b.x1 - bhat.x1) < bse.x1
 cover.x2 <- abs(b.x2 - bhat.x2) < bse.x2
+
+coverage <- cbind(Intercept = cover.x0, x.1 =  cover.x1, x.2 = cover.x2)
+dimnames(coverage)[[1]] = "CI Contains True Value"
+
+coverage
+regression_CI
+```
+ 
+We simulate data from the following model 
+
+$y = 3 + 0.1x1 + 0.5x2 + \epsilon$ where $\epsilon \sim N(0,1)$
+
+Then we fit a linear regression to these data and generate the following coefficient estimates:
+```{r, echo = FALSE}
+beta_est <- cbind(Intercept = bhat.x0, x.1 = bhat.x1, x.2 = bhat.x2)
+dimnames(beta_est)[[1]] <- "Point Estimate"
+beta_est
 ```
 
-(b)  DONE - NEEDS WRITE UP AND FORMATTING
-Put the above step in a loop and repeat 1000 times. Calculate the confidence coverage for the 68% intervals for each of the three coefficients in the model.
+We can then use the standard error of each estimate to generate 68% confidence intervals for the point estimates of each coefficient.
+```{r, echo = FALSE}
+regression_CI
+```
+Therefore, we see the following results. The 68% confidence intervals do not cover the true value of the coefficent for each term in the model.
+```{r, echo = FALSE}
+coverage
+```
 
-```{r}
-# for(i in 1:1000) {
-#   x.1 <- 1:100
-#   x.2 <- rbinom(n = 100, 1, 0.5)
-#   y <- 3 + .1*x.1 + .5*x2
-#   model_81b <- lm(y~x.1 + x.2)
-#   estimates <- summary(model_81b)$coefficients[,1]
-#   stderr <- summary(model_81b)$coefficients[,2]
-#   regression_lower 
-# }
+### Part B
 
+After running the simulation from the previous question 1000 times, I have calculated the confidence coverage for the 68% intervals for each of the three coefficients in the model. The probabilities that the 68% confidence interval will cover the true paramater for each of the coefficents are as follows. 
+```{r, echo = FALSE}
 cover <- matrix(nrow = 1000, ncol = 3)
 
 for(s in 1:1000) {
@@ -121,59 +140,66 @@ for(s in 1:1000) {
   cover[s,] <- abs(b-hat) < se
 }
 
-apply(cover, 2, mean)
+cover_probs <- apply(cover, 2, mean)
+cover_probs <- as.matrix(cover_probs)
+dimnames(cover_probs)[[1]] <- c("Intercept", "x.1", "x.2")
+dimnames(cover_probs)[[2]] <- "68% Confidence Coverage"
+cover_probs
 ```
 
-(c)  Repeat this simulation, but instead fit the model using t errors (see Exercise 6.6).
+### Part C
 
-errors having a t distribution with mean 0, scale 5, and 4 degrees of freedom
-#is this the correct way to sample from scaled t-distribution
-```{r}
+I have performed the same simulation as the problem above; however, I fit the linear regression with errors following a t-distribution with mean = 0, scale = 5, and df = 4. The 68% confidence coverage for the coeffiencts are presented below.
+
+```{r, echo = FALSE}
 coverT <- matrix(nrow = 1000, ncol = 3)
 
 for(s in 1:1000) {
-  #this line has already been run above
-  x.1b <- 1:100 
-  x.2b <- rbinom(n = 100, 1, 0.5)
-  #rt.scaled(100, df = 4, mean = 0, sd = 5)
-  yb <- 3 + .1*x.1b + .5*x.2b + rt.scaled(100, df = 4, mean = 0, sd = 5)
-  model_81b <- lm(yb ~ x.1b + x.2b)
+  x.1c <- 1:100 
+  x.2c <- rbinom(n = 100, 1, 0.5)
+  yc <- 3 + .1*x.1c + .5*x.2c + rt.scaled(100, df = 4, mean = 0, sd = 5)
+  model_81c <- lm(yb ~ x.1c + x.2c)
   b <- c(b.x0, b.x1, b.x2)
-  hat <- coef(model_81b)
-  se <- se.coef(model_81b)
-  cover[s,] <- abs(b-hat) < se
+  hat <- coef(model_81c)
+  se <- se.coef(model_81c)
+  coverT[s,] <- abs(b-hat) < se
 }
 
-apply(cover, 2, mean)
+cover_probsT <- apply(coverT, 2, mean)
+cover_probsT <- as.matrix(cover_probsT)
+dimnames(cover_probsT)[[1]] <- c("Intercept", "x.1", "x.2")
+dimnames(cover_probsT)[[2]] <- "68% Confidence Coverage"
+cover_probsT
 
 ```
+By accurately fitting the linear model with t errors rather than normal errors, we increase our ability to accurately capture and predict the true value of the coefficients.
 
-### Problem 4
-Model checking for count data: the folderrisky.behaviorcontains data froma study of behavior of couples at risk for HIV; see Exercise 6.1.
+## Chapter 8 - Problem 4
 
-(a)  Fit a Poisson regression model predicting number of unprotected sex acts from baseline HIV status. Perform predictive simulation to generate 1000 datasets and record both the percent of observations that are equal to 0 and the percentthat are greater than 10 (the third quartile in the observed data) for each. Compare these values to the observed value in the original data.
-#USE FUPACTS
+### Part A
+<!-- (a)  Fit a Poisson regression model predicting number of unprotected sex acts from baseline HIV status. Perform predictive simulation to generate 1000 datasets and record both the percent of observations that are equal to 0 and the percent that are greater than 10 (the third quartile in the observed data) for each. Compare these values to the observed value in the original data. -->
+<!-- #i dont see 10 as the 3rd quantile -->
 
-```{r}
+We will perform predictive simulation to generate 1000 datasets based on fitting a poisson regression model predicting number of unprotected sex acts at follow up from baseline hiv status using the risky behavior data. After generating the data sets, we are interested in how well the model fits our data. We can explore this by comparing the original dataset to the datasets generated by the model. We are interested in comparing the percent of observations equal to 0 and the percent that are greater than 10 in our simulated data.
+
+```{r, echo = FALSE}
 risky <- read.csv("risky_behaviors.csv")[-1]
 model_4a <- glm(round(fupacts) ~ bs_hiv, family = poisson, data = risky)
 
-# # #length(risky$bupacts) = 434
-# X <- cbind(rep(1, length(risky$bupacts)), risky$bs_hiv)
-# # #y.hat only has 2 different values?
-# y.hat <- exp(X %*% coef(model_4a))
-# y.rep <- rpois(length(risky$bupacts), y.hat)
-
-X <- cbind(rep(1, length(risky$bupacts)), risky$bs_hiv)
+X <- cbind(rep(1, length(risky$fupacts)), risky$bs_hiv)
 sim4a <- sim(model_4a, 1000)
-y4a <- array(NA, c(1000, length(risky$bupacts)))
+y4a <- array(NA, c(1000, length(risky$fupacts)))
 for (s in 1:1000) {
   y4a.hat <- exp(X %*% sim4a@coef[s,])
-  y4a[s,] <- rpois(length(risky$bupacts), y4a.hat)
+  y4a[s,] <- rpois(length(risky$fupacts), y4a.hat)
 }
 
 zero_test <- function(x) {
   mean (x==0)
+}
+
+ten_test <- function(x) {
+  mean(x > 10)
 }
 
 zero.rep <- rep(NA, 1000)
@@ -181,13 +207,96 @@ for(s in 1:1000) {
   zero.rep[s] <- zero_test(y4a[s,])
 }
 
-mean(zero.rep)
+ten.rep <- rep(NA, 1000)
+for(t in 1:1000){
+  ten.rep[t] <- ten_test(y4a[t,])
+}
+
+cat(paste("Simulated Percent of observations equal to zero: ", round(mean(zero.rep)*100, 3), "% \n"))
+
+cat(paste("Actual Percent of observations equal to zero: ", round(mean(round(risky$fupacts) == 0)*100, 3), "% \n\n"))
+
+cat(paste("Simulated Percent of observations greater than ten: ", round(mean(ten.rep)*100, 3), "% \n"))
+
+cat(paste("Actual Percent of observations greater than ten: ", round(mean(round(risky$fupacts)  > 10)*100, 3), "% \n"))
 ```
-(b)  Repeat (a) using an overdispersed Poisson regression model.
-(c)  Repeat (b), also including ethnicity and baseline number of unprotected sex acts as input variables.
-```{r}
+
+### Part B
+We will now perform the same simulation as above, but we will fit the data to an overdispersed poission regression model. A comparison of the original and simulated datasets is presented below.
+
+```{r, echo = FALSE}
+model_4b <- glm(round(fupacts) ~ bs_hiv, family = quasipoisson, data = risky)
+
+Xb <- cbind(rep(1, length(risky$fupacts)), risky$bs_hiv)
+sim4b <- sim(model_4b, 1000)
+y4b <- array(NA, c(1000, length(risky$fupacts)))
+for (s in 1:1000) {
+  y4b.hat <- exp(Xb %*% sim4b@coef[s,])
+  y4b[s,] <- rpois(length(risky$fupacts), y4b.hat)
+}
+
+
+zero.rep <- rep(NA, 1000)
+for(s in 1:1000) {
+  zero.rep[s] <- zero_test(y4b[s,])
+}
+
+
+ten.rep <- rep(NA, 1000)
+for(t in 1:1000){
+  ten.rep[t] <- ten_test(y4b[t,])
+}
+
+cat(paste("Simulated Percent of observations equal to zero: ", round(mean(zero.rep)*100, 3), "% \n"))
+
+cat(paste("Actual Percent of observations equal to zero: ", round(mean(round(risky$fupacts) == 0)*100, 3), "% \n\n"))
+
+cat(paste("Simulated Percent of observations greater than ten: ", round(mean(ten.rep)*100, 3), "% \n"))
+
+cat(paste("Actual Percent of observations greater than ten: ", round(mean(round(risky$fupacts)  > 10)*100, 3), "% \n"))
+```
+The simulated and actual percentages are closer than in the previous question. This indicated that the overdispersed poisson model is more appropriate for our dataset than the poisson model.
+
+### Part C
+(c) also including ethnicity and baseline number of unprotected sex acts as input variables.
+#we are not given a variable for ethnicity
+
+Again, we will perfom the same simulation as above - using an overdispersed poisson model - but we will add in the covariate for baseline number of unprotected sex acts. A summary of the generated data is presented below.
+
+```{r, echo = FALSE}
+model_4c <- glm(round(fupacts) ~ bs_hiv + bupacts, family = quasipoisson, data = risky)
+
+Xc <- cbind(rep(1, length(risky$fupacts)), risky$bs_hiv, risky$bupacts)
+sim4c <- sim(model_4c, 1000)
+y4c <- array(NA, c(1000, length(risky$fupacts)))
+for (s in 1:1000) {
+  y4c.hat <- exp(Xc %*% sim4c@coef[s,])
+  y4c[s,] <- rpois(length(risky$fupacts), y4c.hat)
+}
+
+
+zero.rep <- rep(NA, 1000)
+for(s in 1:1000) {
+  zero.rep[s] <- zero_test(y4c[s,])
+}
+
+
+ten.rep <- rep(NA, 1000)
+for(t in 1:1000){
+  ten.rep[t] <- ten_test(y4c[t,])
+}
+
+cat(paste("Simulated Percent of observations equal to zero: ", round(mean(zero.rep)*100, 3), "% \n"))
+
+cat(paste("Actual Percent of observations equal to zero: ", round(mean(round(risky$fupacts) == 0)*100, 3), "% \n\n"))
+
+cat(paste("Simulated Percent of observations greater than ten: ", round(mean(ten.rep)*100, 3), "% \n"))
+
+cat(paste("Actual Percent of observations greater than ten: ", round(mean(round(risky$fupacts)  > 10)*100, 3), "% \n"))
 
 ```
+Our accuracy in generating observations equal to 0 has not improved. We are successful in generating the appropriate number of obervations greater than ten.
+
 ## Chapter 11
 
 ### Problem 4
