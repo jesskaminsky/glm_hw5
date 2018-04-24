@@ -43,7 +43,7 @@ Inference for the ratio of parameters: a (hypothetical) study compares the costs
 Inference is desired for the incremental cost-effectiveness ratio: the difference between the average costs of the two treatments, divied by the difference between their average effectiveness.
 
 (a) Create 1000 simulation draws of the cost difference and effectiveness difference, and make a scatterplot of these draws
-#WHAT ABOUT THE DF
+####WHAT ABOUT THE DF
 n = 52
 n = 102
 
@@ -259,7 +259,7 @@ The simulated and actual percentages are closer than in the previous question. T
 
 ### Part C
 (c) also including ethnicity and baseline number of unprotected sex acts as input variables.
-#we are not given a variable for ethnicity
+####we are not given a variable for ethnicity
 
 Again, we will perfom the same simulation as above - using an overdispersed poisson model - but we will add in the covariate for baseline number of unprotected sex acts. A summary of the generated data is presented below.
 
@@ -297,81 +297,87 @@ cat(paste("Actual Percent of observations greater than ten: ", round(mean(round(
 ```
 Our accuracy in generating observations equal to 0 has not improved. We are successful in generating the appropriate number of obervations greater than ten.
 
-## Chapter 11
 
-### Problem 4
+## Chapter 11 - Problem 4
 The foldercd4has CD4 percentages for a set of young children with HIV whowere measured several times over a period of two years. The dataset also includesthe ages of the children at each measurement.
+### Part A - does this look ok?
 (a) Graph the outcome (the CD4 percentage, on the square root scale) for eachchild as a function of time.
 ```{r}
 cd4 <- read.csv("cd4.csv")
 
 cd4$vdate <- mdy(cd4$vdate)
 cd4_full <- cd4[complete.cases(cd4),]
-#
-plot(cd4$vdate[cd4$newpid == 1], sqrt(cd4$cd4pct[cd4$newpid == 1]))
-
 
 ggplot(data=cd4_full, aes(x=vdate, y=sqrt(cd4pct), group=newpid, colour=factor(newpid)))+ 
-    geom_line(size=.75) + geom_point() + theme(legend.position="none")
-
-  
-    # scale_x_discrete(limits=c("Jan","Feb","Mar","Apr","May","Jun","Jul",
-    #     "Aug","Sep","Oct","Nov","Dec")) + 
-    # scale_y_continuous(labels=comma) + 
-    # scale_colour_manual(values=cPalette, name="Year") +    
-    # ylab("Volume")
+    geom_line(size=.75) + geom_point() + theme(legend.position="none") + xlab("Year") + ylab("Square Root of CD4 Percentage") + ggtitle("Chapter 11 - Problem 4", subtitle = "Part A")
     
 ```
-(b)  Each child’s data has a time course that can be summarized by a linear fit.Estimate these lines and plot them for all the children.
+### Part B - does this look ok?
 ```{r}
-ggplot(data=cd4, aes(sqrt(cd4pct)~vdate, group=newpid, colour=factor(newpid)))+ 
-    geom_line(size=.75) + geom_point() + theme(legend.position="none")
+attach(cd4_full)
 
-scatterplot <- qplot(x=vdate, y=sqrt(cd4pct), data=cd4)
-scatterplot + geom_abline(aes(intercept=intercept, slope=slope,
-  colour=quantile), data=quantile.regressions)
+plot(cd4$vdate[newpid == 1], sqrt(cd4$cd4pct[newpid ==1]), xlim = c(as.Date("1988-03-07"), as.Date("1991-01-14")), ylim = c(0, 10), xlab = "Year", ylab = "Square Root of CD4 Percentage", main = "Chapter 11 - Problem 4 \n Part B")
 
 
-plot(cd4$vdate[newpid == 1], sqrt(cd4$cd4pct[newpid ==1]), xlim = c(as.Date("1988-03-07"), as.Date("1991-01-14")), ylim = c(0, 10))
+for(i in unique(cd4_full$newpid)) {
+  #print(i)
+  #abline(lm(sqrt(cd4pct) ~ vdate, data = cd4_full[newpid == i,]))
+  temp_mod <- lm(sqrt(cd4pct) ~ vdate, data = cd4_full[newpid == i,])
+  coeffs <- coef(temp_mod)
+   if(is.na(coeffs[2])) {
+     coeffs[2] <- 0
+   }
+  abline(coeffs) 
+  }
 
-# 
-# for(i in 1:max(cd4_full$newpid)) {
-#   abline(lm(sqrt(cd4pct) ~ vdate, data = cd4_full[newpid == i,]))
-# }
 
 
-abline(lm(sqrt(cd4pct) ~ vdate, data = cd4[newpid == 1,]))
-abline(lm(sqrt(cd4pct) ~ vdate, data = cd4[newpid == 2,]))
-abline(lm(sqrt(cd4pct) ~ vdate, data = cd4[newpid == 3,]))
-abline(lm(sqrt(cd4pct) ~ vdate, data = cd4[newpid == 4,]))
-#intercept only model
-abline(lm(sqrt(cd4pct) ~ vdate, data = cd4[newpid == 5,]))
-abline(lm(sqrt(cd4pct) ~ vdate, data = cd4[newpid == 6,]))
 ```
-(c)  Set  up  a  model  for  the  children’s  slopes  and  intercepts  as  a  function  ofthe treatment and age at baseline. Estimate this model using the two-step procedure–first estimate the intercept and slope separately for each child, thenfit the between-child models using the point estimates from the first step.
+### Part C - not sure
+(c)  Set  up  a  model  for  the  children's  slopes  and  intercepts  as  a  function  ofthe treatment and age at baseline. Estimate this model using the two-step procedure estimate the intercept and slope separately for each child, thenfit the between-child models using the point estimates from the first step.
 ```{r}
 
 ```
-## Chapter 12
 
-### Problem 2
-Continuing with the analysis of the CD4 data from Exercise 11.4:
-(a) Write a model predicting CD4 percentage as a function of time with varyingintercepts across children. Fit usinglmer()and interpret the coefficient fortime.
+## Chapter 12 - Problem 2
+
+### Part A
+(a) Write a model predicting CD4 percentage as a function of time with varying intercepts across children. Fit usinglmer()and interpret the coefficient fortime.
 ```{r}
-
+attach(cd4)
+model_122a <- lmer(cd4pct ~ vdate + (1|newpid), data = cd4)
+summary(model_122a)
+display(model_122a)
+coef(model_122a)
 ```
+### Part B - do we need to also include a fixed intercept always?
 (b)  Extend the model in (a) to include child-level predictors (that is, group-levelpredictors) for treatment and age at baseline. Fit using lmer()and interpretthe coefficients on time, treatment, and age at baseline.
+```{r}
+model_122b <- lmer(cd4pct ~ 1 + vdate + (1 + treatmnt + baseage|newpid))
+
+# ?? lmer(cd4pct ~ vdate + treatmnt + baseage + (1|newpid))
+```
+### Part C
 (c) Investigate the change in partial pooling from (a) to (b) both graphically andnumerically.
+```{r}
+
+```
+### Part D
 (d)  Compare results in (b) to those obtained in part (c).
 ```{r}
 
 ```
-### Problem 3
+## Chapter 12 - Problem 3
 Predictions for new observations and new groups:
+### Part A
 (a) Use the model fit from Exercise 12.2(b) to generate simulation of predictedCD4 percentages for each child in the dataset at a hypothetical next timepoint.
+```{r}
+
+```
+### Part B
 (b)  Use the same model fit to generate simulations of CD4 percentages at each ofthe time periods for a new child who was 4 years old at baseline.
-### Problem 4
-Posterior predictive checking: continuing the previous exercise, use the fittedmodel from Exercise 12.2(b) to simulate a new dataset of CD4 percentages (withthe same sample size and ages of the original dataset) for the final time point ofthe study, and record the average CD4 percentage in this sample. Repeat thisprocess 1000 times and compare the simulated distribution to the observed CD4percentage at the final time point for the actual data.
+## Chapter 12 - Problem 4
+Posterior predictive checking: continuing the previous exercise, use the fittedmodel from Exercise 12.2(b) to simulate a new dataset of CD4 percentages (with the same sample size and ages of the original dataset) for the final time point ofthe study, and record the average CD4 percentage in this sample. Repeat thisprocess 1000 times and compare the simulated distribution to the observed CD4percentage at the final time point for the actual data.
 ```{r}
 
 ```
