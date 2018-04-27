@@ -5,7 +5,7 @@ date: "4/11/2018"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(arm)
 library(lubridate)
@@ -31,37 +31,29 @@ for (i in 1:nsims) {
 }
 
 prob <- sum(elevator > 1750) / length(elevator)
+cat(paste("P(elevator breaks) is approximately ", round(prob, 3) * 100, "%"))
 ```
 
-P(elevator breaks) is approximately 0.05
+
 
 ## Chapter 7 - Problem 8
-Inference for the ratio of parameters: a (hypothetical) study compares the costs and effectiveness of two different medical treatments.
-•In the first part of the study, the difference in costs between treatments A and B is estimated at $600 per patient, with a standard error of $400, based on a regression with 50 degrees of freedom.
-•In the second part of the study, the difference in effectiveness is estimated at 3.0 (on some relevant measure), with a standard error of 1.0, based on a regression with 100 degrees of freedom.
-•For simplicity, assume that the data from the two parts of the study were collected independently
 
-Inference is desired for the incremental cost-effectiveness ratio: the difference between the average costs of the two treatments, divied by the difference between their average effectiveness.
+### Part A
 
-(a) Create 1000 simulation draws of the cost difference and effectiveness difference, and make a scatterplot of these draws
+In order to simulate 1000 draws of our variables - cost difference and effectiveness difference - I drew 1000 observations from a normal distribtuion with mean 600 and standard deviation 55.47 = (400/sqrt(52)) and normal with mean 3 and standard deviation 0.99 = (1/sqrt(102)), respectively. For this stimuation I used the formula $\sigma = \frac{SE}{\sqrt{df + k}} $ Where n = df + k and k in the number of predictors in the model.
 
-n = 52 - generate 52 obs with mean = 600, sd = 400
-n = 102 - generate 102 with 3, 1
-ex: a = 300 b = 900
-predictor is trt
-y is cost diff
-#rmt function
 ```{r}
 cost_diff <- rnorm(1000, mean = 600, sd = 400/sqrt(52))
 eff_diff <- rnorm(1000, mean = 3, sd = 1/sqrt(102))
 
 plot(cost_diff, eff_diff, xlab = "Cost Difference", ylab = "Effectiveness Difference", main = "Chapter 7 - Problem 8: Part A")
 ```
-page 142
-(b) Use simulation to come up with an estimate, 50% interval, and 95% intercal for the incremental cost-effectiveness ratio
-```{r}
-ratio <- cost_diff/eff_diff
 
+### Part B
+
+To generate an estimate of the ratio between cost difference and effectiveness difference, I drew 1000 samples of 1000 from the previously mentioned normal distributions then divided all observations of cost by their respective observation of effectiveness. I then found the mean and quantiles from the sample of all of these ratio esimates, which is presented below.
+
+```{r}
 cost_mat <- c()
 eff_mat <- c()
 for(i in 1:1000) {
@@ -71,10 +63,12 @@ for(i in 1:1000) {
 
 ratio_mat <- cost_mat/eff_mat
 
-mean(ratio_mat)
-quantile(ratio_mat, c(.50, .95))
+cat(paste("Estimate of Cost-Effectiveness Ratio: ", round(mean(ratio_mat), 3), "\n"))
+cat("50% and 95% Intervals for C-E ratio \n")
+quantile(ratio_mat, c(.25, .75, .975))
 ```
-(c) Repeat this problem, changing the standard error on the difference in effectiveness to 2.0
+
+The results of the same simulation as above are presented below - I have changed the value of standard error from 1 to 2, which has changed the standard deviation of the distribution of effectiveness from 0.099 to 0.198
 
 ```{r}
 cost_diff2 <- rnorm(1000, mean = 600, sd = 400/sqrt(52))
@@ -94,13 +88,13 @@ for(i in 1:1000) {
 ratio_mat2 <- cost_mat2/eff_mat2
 
 mean(ratio_mat2)
-quantile(ratio_mat2, c(.50, .95))
+quantile(ratio_mat2, c(.25, .75, .975))
 ```
 
 ## Chapter 8 - Problem 1
-Fitting the wrong model: suppose you have 100 data points that arose from the following model:y=3+0.1x1+0.5x2+ error, with errors having a t distribution with mean 0, scale 5, and 4 degrees of freedom. We shall explore the implications of fitting a standard linear regression to these data.
 
 ### Part A
+
 ```{r}
 #generate fake data
 x.1 <- 1:100
@@ -134,8 +128,8 @@ cover.x2 <- abs(b.x2 - bhat.x2) < bse.x2
 coverage <- cbind(Intercept = cover.x0, x.1 =  cover.x1, x.2 = cover.x2)
 dimnames(coverage)[[1]] = "CI Contains True Value"
 
-coverage
-regression_CI
+#coverage
+#regression_CI
 ```
  
 We simulate data from the following model 
@@ -143,6 +137,7 @@ We simulate data from the following model
 $y = 3 + 0.1x1 + 0.5x2 + \epsilon$ where $\epsilon \sim N(0,1)$
 
 Then we fit a linear regression to these data and generate the following coefficient estimates:
+
 ```{r, echo = FALSE}
 beta_est <- cbind(Intercept = bhat.x0, x.1 = bhat.x1, x.2 = bhat.x2)
 dimnames(beta_est)[[1]] <- "Point Estimate"
@@ -150,10 +145,12 @@ beta_est
 ```
 
 We can then use the standard error of each estimate to generate 68% confidence intervals for the point estimates of each coefficient.
+
 ```{r, echo = FALSE}
 regression_CI
 ```
-Therefore, we see the following results. The 68% confidence intervals do not cover the true value of the coefficent for each term in the model.
+Therefore, we see the following results. The 68% confidence intervals do not always cover the true value of the coefficent for each term in the model.
+
 ```{r, echo = FALSE}
 coverage
 ```
@@ -161,6 +158,7 @@ coverage
 ### Part B
 
 After running the simulation from the previous question 1000 times, I have calculated the confidence coverage for the 68% intervals for each of the three coefficients in the model. The probabilities that the 68% confidence interval will cover the true paramater for each of the coefficents are as follows. 
+
 ```{r, echo = FALSE}
 cover <- matrix(nrow = 1000, ncol = 3)
 
@@ -207,6 +205,7 @@ dimnames(cover_probsT)[[2]] <- "68% Confidence Coverage"
 cover_probsT
 
 ```
+
 By accurately fitting the linear model with t errors rather than normal errors, we increase our ability to accurately capture and predict the true value of the coefficients.
 
 ## Chapter 8 - Problem 4
@@ -255,6 +254,7 @@ cat(paste("Actual Percent of observations greater than ten: ", round(mean(round(
 ```
 
 ### Part B
+
 We will now perform the same simulation as above, but we will fit the data to an overdispersed poission regression model. A comparison of the original and simulated datasets is presented below.
 
 ```{r, echo = FALSE}
@@ -288,6 +288,7 @@ cat(paste("Simulated Percent of observations greater than ten: ", round(mean(ten
 
 cat(paste("Actual Percent of observations greater than ten: ", round(mean(round(risky$fupacts)  > 10)*100, 3), "% \n"))
 ```
+
 The simulated and actual percentages are closer than in the previous question. This indicated that the overdispersed poisson model is more appropriate for our dataset than the poisson model.
 
 ### Part C
@@ -326,10 +327,12 @@ cat(paste("Simulated Percent of observations greater than ten: ", round(mean(ten
 cat(paste("Actual Percent of observations greater than ten: ", round(mean(round(risky$fupacts)  > 10)*100, 3), "% \n"))
 
 ```
-Our accuracy in generating observations equal to 0 has not improved. We are successful in generating the appropriate number of obervations greater than ten.
 
+Our accuracy in generating observations equal to 0 has not improved. We are successful in generating approximately the appropriate number of obervations greater than ten.
 
 ## Chapter 11 - Problem 4
+
+The analyses in the remaining questions of this assignment use the cd4 data. For all of these analyses and visualizations, I will use a smaller cd4 data set that only includes observations without any NA values. 
 
 ### Part A
 
@@ -343,16 +346,16 @@ ggplot(data=cd4_full, aes(x=vdate, y=sqrt(cd4pct), group=newpid, colour=factor(n
     geom_line(size=.75) + geom_point() + theme(legend.position="none") + xlab("Year") + ylab("Square Root of CD4 Percentage") + ggtitle("Chapter 11 - Problem 4", subtitle = "Part A")
     
 ```
+
 ### Part B 
+
 ```{r}
 attach(cd4_full)
 
-plot(cd4$vdate[newpid == 1], sqrt(cd4$cd4pct[newpid ==1]), xlim = c(as.Date("1988-03-07"), as.Date("1991-01-14")), ylim = c(0, 10), xlab = "Year", ylab = "Square Root of CD4 Percentage", main = "Chapter 11 - Problem 4 \n Part B")
+plot(cd4_full$vdate[newpid == 1], sqrt(cd4_full$cd4pct[newpid ==1]), xlim = c(as.Date("1988-03-07"), as.Date("1991-01-14")), ylim = c(0, 10), xlab = "Year", ylab = "Square Root of CD4 Percentage", main = "Chapter 11 - Problem 4 \n Part B")
 
 
 for(i in unique(cd4_full$newpid)) {
-  #print(i)
-  #abline(lm(sqrt(cd4pct) ~ vdate, data = cd4_full[newpid == i,]))
   temp_mod <- lm(sqrt(cd4pct) ~ vdate, data = cd4_full[newpid == i,])
   cd4_full$intercept[newpid == i] <- temp_mod$coefficients[1]
   cd4_full$slope[newpid == i] <- temp_mod$coefficients[2]
@@ -366,9 +369,7 @@ for(i in unique(cd4_full$newpid)) {
 ### Part C 
 #coefficients of slope model are sooooo small
 ```{r}
-
 cd4_unique <- cd4_full %>% group_by(newpid) %>% slice(1)
-attach(cd4_unique)
 slope_mod <- lm(slope ~ treatmnt + baseage, data = cd4_unique)
 intercept_mod <- lm(intercept ~ treatmnt + baseage, data = cd4_unique)
 
@@ -387,7 +388,7 @@ $cd4\%=71.91 - 0.01*vdate$
 
 The coefficient for time generated by =this multilevel model with varying intercepts across children is -0.01. This means that for each child CD4 percentage decreases by 0.01 percent for every unit increase in time. A brief summary of the model is presented below.
 
-```{r}
+```{r, include = FALSE}
 attach(cd4_full)
 model_122a <- lmer(cd4pct ~ vdate + (1|newpid), data = cd4_full)
 display(model_122a)
@@ -406,7 +407,7 @@ We can interpret the coefficients as follows:
 
 A brief summary of the model from R is shown below.
 
-```{r}
+```{r,  include = FALSE}
 model_122b <- lmer(cd4pct ~ vdate + treatmnt + baseage + (1|newpid), data = cd4_full)
 
 display(model_122b)
@@ -414,7 +415,7 @@ display(model_122b)
 
 ### Part C
 (c) Investigate the change in partial pooling from (a) to (b) both graphically and numerically.
-```{r}
+```{r,  include = FALSE}
 
 coef_1 <- coef(model_122a)$newpid[[1]]
 coef_2 <- coef(model_122b)$newpid[[1]]
@@ -483,7 +484,7 @@ anova(model_122b, model_122a)
 
 In order to create a hypothetical next timepoint for each patient I found the average time difference between their visits and added that difference to their last visit. If a patient only had one visit and therefore no difference between visit dates, I used the average of the average differences. Then, I used the model from above predicting cd4 prercentage, vist date, treatment group, and baseline age to predict cd4 percentage for each patient and their new hypothetical next timepoint. The predicted values for each patient are listed below.
 ###FIX THE DATES
-```{r}
+```{r, echo = FALSE}
 cd4_averages <- cd4_full %>% group_by(newpid) %>% arrange(vdate) %>% summarize(ave = as.numeric(mean(diff(vdate))))
   
 
@@ -511,27 +512,28 @@ cd4_newtime4$baseage <- 4
 newtime_predict4 <- predict(model_122b, cd4_newtime4)
 
 results <- as.data.frame(cbind(newpid = cd4_newtime4$newpid, newdate = cd4_newtime4$vdate, prediction = newtime_predict4))
-
-
 ```
 
 ## Chapter 12 - Problem 4
 
 We will now generate more predictions - this time using the original, na omitted data except every patients visit date is replaced by the latest date represented in the dataset which is January 14, 1991. We can see the distribution of predicted CD4 percentage after 1000 simulations in the histogram below. The observed CD4 percentages at the final date in the dataset fall in the middle of the distribution which gives us confidence that we have a good model.
 
-```{r}
+```{r, echo = FALSE}
 final_time <- cd4_full
 final_time$vdate <- max(final_time$vdate)
 
 final_time <- final_time %>% group_by(newpid) %>% slice(1)
 
 final_predict <- predict(model_122b, final_time)
-cat(paste("Mean CD4 percentage from Simulated Data using Final date", round(mean(final_predict),3), "\n"))
-cat(paste("Standard Deviation CD4 percentage from Simulated Data using Final date", round(sd(final_predict),3), "\n"))
 hist(rnorm(1000, mean(final_predict), sd(final_predict)))
+cat(paste("\nMean CD4 percentage from Simulated Data using Final date", round(mean(final_predict),3), "\n"))
+cat(paste("Standard Deviation CD4 percentage from Simulated Data using Final date", round(sd(final_predict),3), "\n\n"))
+
 
 cat(paste("Observed CD4 Percentages on Max Date: ", cd4_full$cd4pct[vdate == max(vdate)][1], " and ", cd4_full$cd4pct[vdate == max(vdate)][2], "\n"))
 
 cat(paste("Average CD4 Percentage on Max Date: ", mean(cd4_full$cd4pct[vdate == max(vdate)]), "\n"))
 ```
+
+
 
