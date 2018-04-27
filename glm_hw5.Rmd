@@ -55,17 +55,46 @@ y is cost diff
 cost_diff <- rnorm(1000, mean = 600, sd = 400/sqrt(52))
 eff_diff <- rnorm(1000, mean = 3, sd = 1/sqrt(102))
 
-plot(cost_diff, eff_diff)
+plot(cost_diff, eff_diff, xlab = "Cost Difference", ylab = "Effectiveness Difference", main = "Chapter 7 - Problem 8: Part A")
 ```
 page 142
 (b) Use simulation to come up with an estimate, 50% interval, and 95% intercal for the incremental cost-effectiveness ratio
 ```{r}
+ratio <- cost_diff/eff_diff
 
+cost_mat <- c()
+eff_mat <- c()
+for(i in 1:1000) {
+  cost_mat <- rbind(cost_mat, rnorm(1000, mean = 600, sd = 400/sqrt(52)))
+  eff_mat <- rbind(eff_mat, rnorm(1000, mean = 3, sd = 1/sqrt(102)))
+}
+
+ratio_mat <- cost_mat/eff_mat
+
+mean(ratio_mat)
+quantile(ratio_mat, c(.50, .95))
 ```
 (c) Repeat this problem, changing the standard error on the difference in effectiveness to 2.0
 
 ```{r}
+cost_diff2 <- rnorm(1000, mean = 600, sd = 400/sqrt(52))
+eff_diff2 <- rnorm(1000, mean = 3, sd = 2/sqrt(102))
 
+plot(cost_diff2, eff_diff2, xlab = "Cost Difference", ylab = "Effectiveness Difference", main = "Chapter 7 - Problem 8: Part C")
+
+ratio2 <- cost_diff2/eff_diff2
+
+cost_mat2 <- c()
+eff_mat2 <- c()
+for(i in 1:1000) {
+  cost_mat2 <- rbind(cost_mat2, rnorm(1000, mean = 600, sd = 400/sqrt(52)))
+  eff_mat2 <- rbind(eff_mat2, rnorm(1000, mean = 3, sd = 1/sqrt(102)))
+}
+
+ratio_mat2 <- cost_mat2/eff_mat2
+
+mean(ratio_mat2)
+quantile(ratio_mat2, c(.50, .95))
 ```
 
 ## Chapter 8 - Problem 1
@@ -480,7 +509,10 @@ cd4_newtime4 <- cd4_newtime
 cd4_newtime4$baseage <- 4
 
 newtime_predict4 <- predict(model_122b, cd4_newtime4)
-print(cbind(newpid = cd4_newtime4$newpid, newdate = cd4_newtime4$vdate, prediction = newtime_predict4))
+
+results <- as.data.frame(cbind(newpid = cd4_newtime4$newpid, newdate = cd4_newtime4$vdate, prediction = newtime_predict4))
+
+
 ```
 
 ## Chapter 12 - Problem 4
